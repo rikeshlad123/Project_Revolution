@@ -36,10 +36,10 @@
       border: 2px solid #333;
       margin: 10px;
     }
-    #export-controls {
+    #controls {
       margin: 10px;
     }
-    button {
+    button, select {
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
@@ -47,8 +47,9 @@
       color: #66b2ff;
       border: none;
       border-radius: 4px;
+      margin: 5px;
     }
-    button:hover {
+    button:hover, select:hover {
       background-color: #333;
     }
     footer {
@@ -73,8 +74,12 @@
   <!-- Interactive OpenLayers Map -->
   <div id="map"></div>
 
-  <!-- Export Button -->
-  <div id="export-controls">
+  <!-- Controls: Basemap Switcher + Export -->
+  <div id="controls">
+    <select id="basemap-select">
+      <option value="osm">OSM Streets</option>
+      <option value="satellite">Satellite</option>
+    </select>
     <button id="export-btn">Export Map as PNG</button>
   </div>
 
@@ -82,28 +87,50 @@
     <a href="privacy.html">Privacy Policy</a>
   </footer>
 
-  <!-- OpenLayers + Inkmap Export Script -->
   <script type="module">
     import Map from 'https://cdn.jsdelivr.net/npm/ol@latest/Map.js';
     import View from 'https://cdn.jsdelivr.net/npm/ol@latest/View.js';
     import TileLayer from 'https://cdn.jsdelivr.net/npm/ol@latest/layer/Tile.js';
-    import OSM from 'https://cdn.jsdelivr.net/npm/ol@latest/source/OSM.js';
+    import XYZ from 'https://cdn.jsdelivr.net/npm/ol@latest/source/XYZ.js';
     import { fromLonLat } from 'https://cdn.jsdelivr.net/npm/ol@latest/proj.js';
 
     import { print, downloadBlob } from 'https://camptocamp.github.io/inkmap/master/inkmap.esm.js';
 
+    // Basemap layers
+    const osmLayer = new TileLayer({
+      source: new XYZ({
+        url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+      })
+    });
+
+    const satelliteLayer = new TileLayer({
+      visible: false,
+      source: new XYZ({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+      })
+    });
+
     // Initialize OpenLayers Map
     const map = new Map({
       target: 'map',
-      layers: [
-        new TileLayer({
-          source: new OSM(),
-        }),
-      ],
+      layers: [osmLayer, satelliteLayer],
       view: new View({
         center: fromLonLat([-123.1216, 49.2827]), // Vancouver center
         zoom: 12,
       }),
+    });
+
+    // Basemap switcher
+    const basemapSelect = document.getElementById('basemap-select');
+    basemapSelect.addEventListener('change', () => {
+      const value = basemapSelect.value;
+      if (value === 'osm') {
+        osmLayer.setVisible(true);
+        satelliteLayer.setVisible(false);
+      } else if (value === 'satellite') {
+        osmLayer.setVisible(false);
+        satelliteLayer.setVisible(true);
+      }
     });
 
     // Export current map view using Inkmap
@@ -113,13 +140,20 @@
       const extent = view.calculateExtent(size);
       const projection = view.getProjection().getCode();
 
+      const activeLayer = basemapSelect.value === 'osm'
+        ? {
+            type: 'xyz',
+            url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+          }
+        : {
+            type: 'xyz',
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          };
+
       const spec = {
         projection: projection,
         bbox: extent,
-        layers: [{
-          type: 'xyz',
-          url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        }],
+        layers: [activeLayer],
         size: size,
         dpi: 150,
       };
