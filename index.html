@@ -1,47 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrueGIS</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            background-color: #0e0f0f;
-            color: #ffffff;
-        }
-        header img {
-            max-width: 200px;
-            height: auto;
-            margin-top: 40px;
-        }
-        footer {
-            margin-bottom: 20px;
-        }
-        a {
-            text-decoration: none;
-            color: #66b2ff;
-            font-size: 14px;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrueGIS</title>
+
+  <!-- Inkmap Web Components (latest master) -->
+  <script type="module" src="https://camptocamp.github.io/inkmap/master/inkmap-components.esm.js"></script>
+  <link rel="stylesheet" href="https://camptocamp.github.io/inkmap/master/inkmap-components.css" />
+
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #0e0f0f;
+      color: #ffffff;
+    }
+    header img {
+      max-width: 200px;
+      height: auto;
+      margin-top: 20px;
+    }
+    footer {
+      margin-bottom: 20px;
+    }
+    a {
+      text-decoration: none;
+      color: #66b2ff;
+      font-size: 14px;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    #example-01 {
+      width: 80%;
+      max-width: 600px;
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <img src="ChatGPT Image Apr 28, 2025, 12_02_48 AM.png" alt="TrueGIS Logo">
-    </header>
 
-    <footer>
-        <a href="privacy.html">Privacy Policy</a>
-    </footer>
+  <header>
+    <img src="ChatGPT Image Apr 28, 2025, 12_02_48 AM.png" alt="TrueGIS Logo">
+  </header>
+
+  <!-- Inkmap Component Area -->
+  <main id="example-01">
+    <print-spec></print-spec>
+    <custom-button label="Export Map"></custom-button>
+  </main>
+
+  <footer>
+    <a href="privacy.html">Privacy Policy</a>
+  </footer>
+
+  <script type="module">
+    import { downloadBlob, print } from 'https://camptocamp.github.io/inkmap/master/inkmap.esm.js';
+
+    const root = document.getElementById('example-01');
+    const btn = root.querySelector('custom-button');
+    const spec = root.querySelector('print-spec');
+
+    spec.onValidityCheck(valid => btn.enabled = valid);
+
+    btn.addEventListener('click', async () => {
+      btn.showSpinner();
+      const blob = await print(spec.value);
+      btn.hideSpinner();
+      downloadBlob(blob, 'truegis-map.png');
+    });
+  </script>
+
 </body>
 </html>
