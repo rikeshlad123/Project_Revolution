@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>TrueGIS</title>
 
-  <!-- Inkmap Web Components (latest master) -->
+  <!-- OpenLayers CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@latest/ol.css">
+  
+  <!-- Inkmap Web Components -->
   <script type="module" src="https://camptocamp.github.io/inkmap/master/inkmap-components.esm.js"></script>
   <link rel="stylesheet" href="https://camptocamp.github.io/inkmap/master/inkmap-components.css" />
 
@@ -14,8 +17,8 @@
       font-family: sans-serif;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
       align-items: center;
+      justify-content: flex-start;
       height: 100vh;
       margin: 0;
       background-color: #0e0f0f;
@@ -24,10 +27,32 @@
     header img {
       max-width: 200px;
       height: auto;
-      margin-top: 20px;
+      margin: 20px;
+    }
+    #map {
+      width: 90%;
+      max-width: 800px;
+      height: 60vh;
+      border: 2px solid #333;
+      margin: 10px;
+    }
+    #export-controls {
+      margin: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #222;
+      color: #66b2ff;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #333;
     }
     footer {
-      margin-bottom: 20px;
+      margin: 20px;
     }
     a {
       text-decoration: none;
@@ -37,13 +62,6 @@
     a:hover {
       text-decoration: underline;
     }
-    #example-01 {
-      width: 80%;
-      max-width: 600px;
-      background: #1a1a1a;
-      padding: 10px;
-      border-radius: 8px;
-    }
   </style>
 </head>
 <body>
@@ -52,29 +70,61 @@
     <img src="ChatGPT Image Apr 28, 2025, 12_02_48 AM.png" alt="TrueGIS Logo">
   </header>
 
-  <!-- Inkmap Component Area -->
-  <main id="example-01">
-    <print-spec></print-spec>
-    <custom-button label="Export Map"></custom-button>
-  </main>
+  <!-- Interactive OpenLayers Map -->
+  <div id="map"></div>
+
+  <!-- Export Button -->
+  <div id="export-controls">
+    <button id="export-btn">Export Map as PNG</button>
+  </div>
 
   <footer>
     <a href="privacy.html">Privacy Policy</a>
   </footer>
 
+  <!-- OpenLayers + Inkmap Export Script -->
   <script type="module">
-    import { downloadBlob, print } from 'https://camptocamp.github.io/inkmap/master/inkmap.esm.js';
+    import Map from 'https://cdn.jsdelivr.net/npm/ol@latest/Map.js';
+    import View from 'https://cdn.jsdelivr.net/npm/ol@latest/View.js';
+    import TileLayer from 'https://cdn.jsdelivr.net/npm/ol@latest/layer/Tile.js';
+    import OSM from 'https://cdn.jsdelivr.net/npm/ol@latest/source/OSM.js';
+    import { fromLonLat } from 'https://cdn.jsdelivr.net/npm/ol@latest/proj.js';
 
-    const root = document.getElementById('example-01');
-    const btn = root.querySelector('custom-button');
-    const spec = root.querySelector('print-spec');
+    import { print, downloadBlob } from 'https://camptocamp.github.io/inkmap/master/inkmap.esm.js';
 
-    spec.onValidityCheck(valid => btn.enabled = valid);
+    // Initialize OpenLayers Map
+    const map = new Map({
+      target: 'map',
+      layers: [
+        new TileLayer({
+          source: new OSM(),
+        }),
+      ],
+      view: new View({
+        center: fromLonLat([-123.1216, 49.2827]), // Vancouver center
+        zoom: 12,
+      }),
+    });
 
-    btn.addEventListener('click', async () => {
-      btn.showSpinner();
-      const blob = await print(spec.value);
-      btn.hideSpinner();
+    // Export current map view using Inkmap
+    document.getElementById('export-btn').addEventListener('click', async () => {
+      const size = [800, 600]; // pixels
+      const view = map.getView();
+      const extent = view.calculateExtent(size);
+      const projection = view.getProjection().getCode();
+
+      const spec = {
+        projection: projection,
+        bbox: extent,
+        layers: [{
+          type: 'xyz',
+          url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        }],
+        size: size,
+        dpi: 150,
+      };
+
+      const blob = await print(spec);
       downloadBlob(blob, 'truegis-map.png');
     });
   </script>
